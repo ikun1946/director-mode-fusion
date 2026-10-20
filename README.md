@@ -1,5 +1,6 @@
 # Director Mode Fusion (导演模式最终融合版)
 
+[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](scripts/validate_storyboard.py)
 [![Antigravity Skill](https://img.shields.io/badge/Antigravity-Skill-orange.svg)](SKILL.md)
@@ -57,6 +58,7 @@ director-mode-fusion/
 ├── LICENSE                           # MIT 开源许可证
 ├── README.md                         # 项目介绍与说明文档
 ├── .gitignore                        # Git 忽略文件配置
+├── CHANGELOG.md                      # 版本变更日志（遵循 Keep a Changelog 规范）
 ├── agents/
 │   └── openai.yaml                   # Agent 配置文件
 ├── references/                       # 八大专项设计与控制规范
@@ -68,8 +70,53 @@ director-mode-fusion/
 │   ├── visual-language.md            # 解剖景别截取、构图留白与光影景深
 │   └── voice-consistency.md          # 角色音色卡与跨镜提示词锚点绑定
 └── scripts/
-    └── validate_storyboard.py        # 分镜格式、数字、编号与音色自动化校验器
+    ├── validate_storyboard.py        # 分镜格式、数字、编号与音色自动化校验器
+    └── version_manager.py            # 版本管理、一键回退与同步发布工具
 ```
+
+---
+
+## 版本管理与多版本切换（支持一键回退）
+
+本项目支持严格的**多版本并存**与**历史版本秒级回退**。在项目根目录下提供了便捷的管理工具 `scripts/version_manager.py`：
+
+### 1. 查看所有并存版本
+```bash
+python scripts/version_manager.py list
+```
+输出示例：
+```text
+============================================================
+📦 director-mode-fusion 版本清单
+当前工作分支: master  |  当前 SKILL.md 版本: v1.0.0
+============================================================
+已发布版本 (可在任何时候一键切换/回退到任一版本):
+  --> [当前激活] v1.0.0       feat: initial release with disruption beat profile
+```
+
+### 2. 回退到以前的历史版本（自动同步到 Antigravity）
+如果需要回退到任一指定版本（例如 `v1.0.0`），只需运行：
+```bash
+python scripts/version_manager.py switch v1.0.0
+```
+* 该命令会自动将 Git 检出至该版本标签，并**自动将历史版本完整同步到 Antigravity 的配置目录**，无需手动搬运文件。
+* 随时切回最新开发主干：
+  ```bash
+  python scripts/version_manager.py switch master
+  ```
+
+### 3. 发布新版本（自动更新文档、提交、打 Tag、推 GitHub、创建 Release）
+每次修改并完善 Skill 后，运行以下单行命令即可完成一键发布：
+```bash
+python scripts/version_manager.py release 1.1.0 -m "优化了中全景转焦提示词，增强了雨景光影控制"
+```
+工具将全自动完成：
+1. 更新 `SKILL.md` 的 `version` 元数据；
+2. 在 `CHANGELOG.md` 中记录本次改动详情；
+3. 执行 Git 提交并生成 Annotated Git Tag；
+4. 推送分支与标签至 GitHub 远程；
+5. 调用 GitHub CLI 创建带改动说明的 Release；
+6. 自动同步至本地 Antigravity 配置目录。
 
 ---
 
