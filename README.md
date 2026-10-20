@@ -1,6 +1,6 @@
 # Director Mode Fusion (导演模式最终融合版)
 
-[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-brightgreen.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](scripts/validate_storyboard.py)
 [![Antigravity Skill](https://img.shields.io/badge/Antigravity-Skill-orange.svg)](SKILL.md)
@@ -28,13 +28,13 @@
 - **手持微幅呼吸感（Handheld Breathing）**：区别于剧烈颠簸，赋予摄影机有机的微小呼吸起伏，打破纯 3D 渲染的死板僵滞。
 - **转焦避坑（Rack Focus 防护）**：警示并规避单镜内大范围光学虚焦拉风箱（易致画面融化噪点），采用物理位移推进或直接切镜转移视觉重心。
 
-### 3. 经典戏剧节拍模板：突发反差五镜流（Disruption & Contrast Beat Profile）
-针对突发闯入、反派下通牒、狗血宣告、抓现行翻车或反差喜剧等情节，固化了高表现力、高成功率的标准五镜切镜节奏（标准时长 12.0–14.0s）：
-* **镜1（2.2–2.8s）·起势被打断**：主体 A 沉浸在自身动作/情绪中，动作推向高潮被画外暴响硬截断（快推+手持微幅呼吸感）。
-* **镜2（1.8–2.4s）·外力介入爆点**：纯动作/环境撞击爆点（踹门、摔物、大步踏入），贴地仰视角动作冲击构图。
-* **镜3（1.8–2.2s）·生理应激反应**：主体 A 真实的生理应激微表情（浑身一颤、瞳孔骤缩、手滑跌落、闭口倒吸冷气）。
-* **镜4（3.5–4.5s）·强势输出施压**：主体 B 居高临下大仰角压迫中景，声色俱厉输出核心长句宣告，画外听者闭口听。
-* **镜5（2.0–2.8s）·反差荒谬定格**：预期违背，主体 A 瞬间转变为“看疯子/极度荒谬”的冷幽默微表情，死寂余响收尾。
+### 3. 快节奏剪辑与高张力镜头语言（Pacing, Impact & Micro-acting）
+不生搬硬套死板模板，而是提炼快节奏视听语言的核心推力，根据剧本有机调度：
+- **截断式剪辑（Interrupted Cutting）**：台词或动作在情绪高点被突发画外暴响或外力暴力硬截断（如“我的——”尾字截断接踹门声），制造强烈的听觉冲击与剧情推背感。
+- **动静急刹对撞（Extreme Motion Contrast）**：极度动态的冲击动作（如抓狂抱头、暴烈破门）紧接完全凝固的静止反应（倒吸冷气、手滑跌落、目瞪口呆），动静骤停营造强烈的心理停滞感。
+- **写实生理机制微表情**：彻底淘汰“震惊、害怕”等概括词，细写到“双眼睁大瞳孔骤缩、倒吸冷气、身体一颤、双手失控滑落跌在腿上”等肌肉受惊本能。
+- **情绪瞬间换挡（预期违背）**：在强刺激后打破常规恐惧套路，通过微妙眼神与面部微动瞬间从“惊魂未定”换挡为“看疯子/极度荒谬/无语”的冷幽默反差。
+- **极端视点造势**：平视常规机位与贴地大仰视角（距地 0.2–0.3m 仰摄）形成强烈落差，用机位自身建立天然威压。
 
 ### 4. 摄影机五要素与公制距离规范
 运镜字段必须按单行一句话串成：
@@ -151,7 +151,7 @@ python scripts/validate_storyboard.py your_storyboard.md --check-controls
 
 ---
 
-## 标准范例预览（突发反差五镜流）
+## 标准范例预览（快节奏剪辑与情绪换挡）
 
 ```text
 段落1｜总时长：13.2s
