@@ -1,6 +1,7 @@
 ---
 name: director-mode-fusion
-version: 1.0.1
+version: 1.0.2
+repository: https://github.com/ikun1946/director-mode-fusion
 description: 将小说、剧本或故事改编为即梦/Seedance可执行导演分镜，融合《逐玉》光影构图与《糯糯下山》表演剪辑，细写可见动作、空间层次和信息揭示，控制10.0–15.0秒段落、人物道具连续、对白指向、角色音色锚点与连续运镜。用于“导演模式最终融合版”、完整拆镜、分镜提示词生成或按此规则修订分镜；不用于直接生成视频或仅润色故事。
 ---
 
@@ -119,3 +120,13 @@ description: 将小说、剧本或故事改编为即梦/Seedance可执行导演�
 可用 `python scripts/validate_storyboard.py 分镜文件.md` 校验默认格式的数字、编号与字段；分批续写可传 `--start-shot 31 --start-paragraph 8`。若交付中含可选制作控制卡，可加 `--check-controls` 检查参考素材格式、参考图预算、群像在场/入画/入退场、禁用项和负面约束预算。交付含对白时，可加 `--check-voices` 检查音色锚点、V-ID/角色映射和基础描述是否跨镜一致；它不验证实际声学效果。脚本把输入视为一个完整交付批次，并检查所有段落（含最后一段）是否在10.0–15.0秒。它不判断原文覆盖、语速、动作可行性或人物连续性，不能代替语义复核。用户另定时长或格式时按其要求人工校验，不强行套用脚本默认值。
 
 需要追查文件规则或矛盾处理时读取 [来源与融合说明](references/source-map.md)。本技能自包含，常规使用不需要原PDF或其他分镜技能。
+
+## 仓库地址与 Agent 维护更新
+
+- **官方 Git 仓库**：[https://github.com/ikun1946/director-mode-fusion](https://github.com/ikun1946/director-mode-fusion)
+- **Git Clone / Remote 地址**：`https://github.com/ikun1946/director-mode-fusion.git`
+- **Agent 维护指引**：
+  - 当其他 Agent 需要检查最新规则、获取更新或排查问题时，可直接依据上述仓库链接定位到代码库。
+  - 获取最新版：`git pull origin master`
+  - 查看历史并存版本或回退：`python scripts/version_manager.py list` / `python scripts/version_manager.py switch <version>`
+  - 将改动同步生效至本地 Antigravity 技能目录：`python scripts/version_manager.py sync`

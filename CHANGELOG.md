@@ -5,6 +5,15 @@
 
 ---
 
+## [1.0.2] - 2026-10-20
+
+### 新增 (Added)
+- **Git 仓库链接元数据与 Agent 维护更新指引**：
+  - 在 `SKILL.md` 的 YAML Frontmatter 中规范加入 `repository: https://github.com/ikun1946/director-mode-fusion`。
+  - 在 `SKILL.md` 末尾增设“仓库地址与 Agent 维护更新”专节，使其他协同 Agent 能够直接依据 Skill 内容解析官方仓库链接，并执行 `git pull origin master`、版本查询与一键切换。
+
+---
+
 ## [1.0.1] - 2026-10-20
 
 ### 重构与核心升级 (Refactored & Enhanced)
