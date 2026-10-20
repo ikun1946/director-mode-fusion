@@ -1,0 +1,361 @@
+#!/usr/bin/env python3
+"""Validate director-mode-fusion structure and timing; not story semantics or audio quality."""
+import argparse
+from decimal import Decimal
+from pathlib import Path
+import re
+import sys
+
+NUMBER = r"[0-9]+\.[0-9]"
+PARAGRAPH = re.compile(rf"段落([0-9]+)｜总时长：({NUMBER})s")
+SHOT = re.compile(rf"镜([0-9]+)｜({NUMBER})s｜([^/\n]+/[^/\n]+/[^/\n]+)")
+VOICE_TOKEN = re.compile(r"【(V[0-9]{3,})｜([^】\n]+)】")
+VOICE_CARD = re.compile(r"^\s*(?:[-*]\s*)?(V[0-9]{3,})｜([^｜\n]+)｜([^\n]+?)\s*$", re.MULTILINE)
+DIALOGUE_QUOTE = re.compile(r"[“「][^”」]+[”」]")
+TEMPORARY_VOICE_WORDS = ("当前", "此刻", "愤怒", "悲伤", "哭腔", "哽咽", "嘶吼", "尖叫", "醉酒", "喘息")
+SPEAKER_PREFIXES = ("画外", "电话中", "电话", "隔门", "OS", "VO")
+
+
+def validate(text, start_shot=1, start_paragraph=1):
+    errors = []
+    stripped = text.strip()
+    if not stripped:
+        return ["输入为空"]
+    blocks = re.split(r"(?m)^\s*@\s*$", stripped)
+    next_shot = start_shot
+    for index, block in enumerate(blocks):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        label = f"第{index + 1}段块"
+        if len(lines) < 5:
+            errors.append(f"{label}：缺少段落信息或镜头（也请检查多余@）")
+            continue
+        header = PARAGRAPH.fullmatch(lines[0])
+        if not header:
+            errors.append(f"{label}：段落标题格式错误")
+            continue
+        number, declared = int(header[1]), Decimal(header[2])
+        label = f"段落{number}"
+        if number != start_paragraph + index:
+            errors.append(f"{label}：段落编号不连续")
+        for position, prefix in [(1, "场景："), (2, "出场人物："), (3, "本段统一光影/质感：")]:
+            if not lines[position].startswith(prefix) or not lines[position][len(prefix):].strip():
+                errors.append(f"{label}：缺少或错置{prefix}")
+        total = Decimal("0")
+        count = 0
+        pending_scene = False
+        cursor = 4
+        while cursor < len(lines):
+            line = lines[cursor]
+            if line == "制作控制卡":
+                cursor += 1
+                while cursor < len(lines) and not lines[cursor].startswith(("镜", "场景：", "段落")):
+                    cursor += 1
+                continue
+            if line.startswith("场景："):
+                if pending_scene or not line[len("场景："):].strip():
+                    errors.append(f"{label}：场景切换重复或为空")
+                pending_scene = True
+                cursor += 1
+                continue
+            match = SHOT.fullmatch(line)
+            if not match:
+                errors.append(f"{label}：预期镜头标题，实际为 {line[:55]}")
+                cursor += 1
+                continue
+            pending_scene = False
+            count += 1
+            shot_no, duration = int(match[1]), Decimal(match[2])
+            if shot_no != next_shot:
+                errors.append(f"镜{shot_no}：编号应为{next_shot}")
+            next_shot = shot_no + 1
+            if duration <= 0:
+                errors.append(f"镜{shot_no}：时长必须大于0")
+            total += duration
+            cursor += 1
+            body = []
+            while cursor < len(lines) and not lines[cursor].startswith(("镜", "场景：", "段落")):
+                body.append(lines[cursor])
+                cursor += 1
+            fields = [part.split("：", 1)[0] for part in body]
+            allowed = [["画面", "台词/声音", "运镜"], ["画面", "本镜光影", "台词/声音", "运镜"]]
+            if fields not in allowed:
+                errors.append(f"镜{shot_no}：字段缺失、重复、错序或存在额外字段")
+            for part in body:
+                if "：" not in part or not part.split("：", 1)[1].strip():
+                    errors.append(f"镜{shot_no}：空字段")
+            moves = [part for part in body if part.startswith("运镜：")]
+            if len(moves) == 1:
+                move_text = moves[0]
+                if "摄影机" not in move_text:
+                    errors.append(f"镜{shot_no}：运镜需含“摄影机”明确机位指令")
+                if "焦点" not in move_text:
+                    errors.append(f"镜{shot_no}：运镜需含“焦点”轨迹")
+                if "结束于" not in move_text and "结束" not in move_text:
+                    errors.append(f"镜{shot_no}：运镜需含“结束于”说明结束构图")
+                motion_verbs = ["推", "拉", "摇", "移", "升", "降", "环绕", "固定", "复合"]
+                if not any(v in move_text for v in motion_verbs):
+                    errors.append(f"镜{shot_no}：运镜需用标准运动动词之一（推/拉/摇/移/升/降/环绕/固定/复合）")
+                if re.search(r"\d+(?:\.\d+)?\s*步", move_text):
+                    errors.append(f"镜{shot_no}：机位距离请使用公制单位（米/厘米），不得使用“步”")
+                if re.search(r"\d+(?:\.\d+)?\s*(?:s\b|秒|%|％)|\d+:\d+|第[一二三四五六七八九十\d]+秒", move_text):
+                    errors.append(f"镜{shot_no}：运镜内部含时间或百分比")
+                if any(word in move_text for word in ["继续推进", "接上个", "同前", "状态不变", "保持不变"]):
+                    errors.append(f"镜{shot_no}：运镜使用抽象依赖表达")
+        if pending_scene:
+            errors.append(f"{label}：场景标注后没有镜头")
+        if not count:
+            errors.append(f"{label}：没有有效镜头")
+        if total != declared:
+            errors.append(f"{label}：标题{declared}s，实际加总{total}s")
+        if declared <= 0:
+            errors.append(f"{label}：总时长必须大于0")
+        if not Decimal("10.0") <= total <= Decimal("15.0"):
+            errors.append(f"{label}：实际时长{total}s，不在10.0–15.0s")
+    return errors
+
+
+def _normalize_voice_description(value):
+    return re.sub(r"\s+", "", value).replace("，", "·").replace("/", "·")
+
+
+def _voice_speaker(line, position):
+    prefix = line[:position]
+    if prefix.startswith("台词/声音："):
+        prefix = prefix.split("：", 1)[1]
+    chunk = re.split(r"[，。；：:！？!?、\s]", prefix)[-1].strip("“”「」『』()（）")
+    for marker in SPEAKER_PREFIXES:
+        if chunk.startswith(marker) and len(chunk) > len(marker):
+            chunk = chunk[len(marker):]
+            break
+    if not chunk:
+        return None
+    return chunk[-20:]
+
+
+def validate_voices(text):
+    """Validate structural voice anchors and cross-shot identity mappings."""
+    errors = []
+    id_to_desc = {}
+    id_to_name = {}
+    name_to_ids = {}
+    name_to_desc = {}
+
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        matches = list(VOICE_TOKEN.finditer(stripped))
+        for match in matches:
+            voice_id, desc = match.group(1), match.group(2).strip()
+            if not stripped.startswith("台词/声音："):
+                errors.append(f"第{line_no}行：音色锚点必须写在“台词/声音”字段内")
+                continue
+            speaker = _voice_speaker(stripped, match.start())
+            if not speaker:
+                errors.append(f"第{line_no}行：音色锚点前必须紧接标准资产名")
+                continue
+            parts = [part.strip() for part in re.split(r"[·/，,]", desc) if part.strip()]
+            if not 3 <= len(parts) <= 5:
+                errors.append(f"第{line_no}行：{voice_id}基础音色必须含3–5项稳定描述，当前{len(parts)}项")
+            if any(word in desc for word in TEMPORARY_VOICE_WORDS):
+                errors.append(f"第{line_no}行：{voice_id}基础音色含临时情绪或发声状态，应移到锚点外")
+            if "待定" in desc or "TBD" in desc.upper():
+                errors.append(f"第{line_no}行：{voice_id}基础音色不能使用待定占位")
+
+            normalized_desc = _normalize_voice_description(desc)
+            if voice_id in id_to_desc and id_to_desc[voice_id] != normalized_desc:
+                errors.append(f"第{line_no}行：{voice_id}的基础音色描述与先前镜头不一致")
+            id_to_desc.setdefault(voice_id, normalized_desc)
+            if voice_id in id_to_name and id_to_name[voice_id] != speaker:
+                errors.append(f"第{line_no}行：{voice_id}同时绑定到“{id_to_name[voice_id]}”和“{speaker}”")
+            id_to_name.setdefault(voice_id, speaker)
+            name_to_ids.setdefault(speaker, set()).add(voice_id)
+            if speaker in name_to_desc and name_to_desc[speaker] != normalized_desc:
+                errors.append(f"第{line_no}行：角色“{speaker}”的基础音色描述跨镜不一致")
+            name_to_desc.setdefault(speaker, normalized_desc)
+
+        if stripped.startswith("台词/声音：") and DIALOGUE_QUOTE.search(stripped) and not matches:
+            errors.append(f"第{line_no}行：含对白但缺少音色锚点【Vxxx｜基础音色描述】")
+
+    for name, ids in name_to_ids.items():
+        if len(ids) > 1:
+            errors.append(f"角色“{name}”使用了多个V-ID：{'、'.join(sorted(ids))}")
+    cards = {}
+    card_names = {}
+    for match in VOICE_CARD.finditer(text):
+        voice_id, name, desc = match.group(1), match.group(2).strip(), match.group(3).strip()
+        if voice_id in cards:
+            errors.append(f"角色音色卡：{voice_id}重复")
+            continue
+        cards[voice_id] = (name, _normalize_voice_description(desc))
+        if name in card_names and card_names[name] != voice_id:
+            errors.append(f"角色音色卡：角色“{name}”出现多个V-ID")
+        card_names[name] = voice_id
+        if voice_id in id_to_name and id_to_name[voice_id] != name:
+            errors.append(f"角色音色卡：{voice_id}写为“{name}”，分镜绑定为“{id_to_name[voice_id]}”")
+        if voice_id in id_to_desc and id_to_desc[voice_id] != _normalize_voice_description(desc):
+            errors.append(f"角色音色卡：{voice_id}基础描述与分镜锚点不一致")
+
+    return errors
+
+
+def _parse_count(line):
+    match = re.search(r"(\d+)\s*张", line)
+    return int(match.group(1)) if match else None
+
+
+def _names_after_bar(line):
+    value = line.split("：", 1)[1]
+    had_bar = False
+    for bar in ("｜", "|"):
+        if bar in value:
+            value = value.split(bar, 1)[1]
+            had_bar = True
+            break
+    if not had_bar and re.fullmatch(r"\d+\s*张", value.strip()):
+        return []
+    return [item.strip() for item in re.split(r"[、,，]", value) if item.strip()]
+
+
+def validate_controls(text, allow_frame_anchors=False):
+    """Validate optional production-control lines when explicitly requested."""
+    errors = []
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    control_prefixes = (
+        "景别策略：", "参考素材：", "复杂度：", "起始状态：", "结束状态：",
+        "声音槽位：", "负面约束：", "场景人物名册：", "场景在场：", "本段入画：",
+        "本段出场：", "画外在场：", "入退场：", "座位图：", "本段可见范围：",
+        "参考图预算：", "场景参考：", "角色参考：", "其他参考：",
+        "角色音色卡：", "音色绑定：",
+    )
+    present = [line for line in lines if line.startswith(control_prefixes)]
+    if not present:
+        return ["未找到制作控制卡（景别策略/参考素材/复杂度/起始状态/结束状态/声音槽位/负面约束）"]
+
+    profiles = {"对话表演型", "空间叙事型", "动作奇观型"}
+    has_start = any(line.startswith("起始状态：") for line in lines)
+    has_end = any(line.startswith("结束状态：") for line in lines)
+    if has_start != has_end:
+        errors.append("制作控制卡：起始状态与结束状态必须同时存在")
+
+    def get_line(prefix):
+        return next((line for line in lines if line.startswith(prefix)), None)
+
+    # Group-scene continuity fields.
+    group_prefixes = ("场景在场：", "本段入画：", "本段出场：", "画外在场：", "入退场：", "本段可见范围：", "座位图：")
+    if any(line.startswith(group_prefixes) for line in lines):
+        for required in ("场景在场：", "本段入画：", "本段出场：", "入退场："):
+            if get_line(required) is None:
+                errors.append(f"制作控制卡：群像场景缺少{required[:-1]}")
+        visible = get_line("本段可见范围：")
+        if visible:
+            visible_value = visible.split("：", 1)[1].strip()
+            if visible_value not in {"整桌", "局部"}:
+                errors.append("制作控制卡：本段可见范围只能为“整桌”或“局部”")
+            if visible_value == "整桌":
+                on_scene = get_line("场景在场：")
+                in_frame = get_line("本段入画：")
+                if on_scene and in_frame:
+                    if len(_names_after_bar(on_scene)) != len(_names_after_bar(in_frame)):
+                        errors.append("制作控制卡：整桌可见时，本段入画人数必须等于场景在场人数")
+        on_scene = get_line("场景在场：")
+        in_frame = get_line("本段入画：")
+        if on_scene and in_frame and len(_names_after_bar(in_frame)) > len(_names_after_bar(on_scene)):
+            errors.append("制作控制卡：本段入画人物不能多于场景在场人物")
+
+    # Nine-image reference budget.
+    budget_line = get_line("参考图预算：")
+    scene_line = get_line("场景参考：")
+    role_line = get_line("角色参考：")
+    other_line = get_line("其他参考：")
+    if budget_line is None or scene_line is None or role_line is None:
+        errors.append("制作控制卡：必须写明参考图预算、场景参考和角色参考")
+    else:
+        budget = _parse_count(budget_line)
+        scene_count = _parse_count(scene_line)
+        role_count = _parse_count(role_line)
+        other_count = _parse_count(other_line) if other_line else 0
+        if budget is None or scene_count is None or role_count is None:
+            errors.append("制作控制卡：参考图预算、场景参考和角色参考必须写明“N张”")
+        else:
+            if scene_count != 1:
+                errors.append("制作控制卡：场景参考必须为1张")
+            if role_count > 8:
+                errors.append("制作控制卡：角色参考最多8张")
+            if other_count is None:
+                errors.append("制作控制卡：其他参考必须写明“N张”")
+                other_count = 0
+            total = scene_count + role_count + other_count
+            if total > 9:
+                errors.append(f"制作控制卡：参考图总数{total}张，超过9张上限")
+            if budget != total:
+                errors.append(f"制作控制卡：参考图预算{budget}张与实际合计{total}张不一致")
+            for prefix in ("场景参考：", "角色参考：", "其他参考："):
+                line = get_line(prefix)
+                if line:
+                    declared = _parse_count(line)
+                    names = _names_after_bar(line)
+                    if declared is not None and names and declared != len(names):
+                        errors.append(f"制作控制卡：{prefix[:-1]}写{declared}张，但列出了{len(names)}项")
+
+    for line in lines:
+        if line.startswith("景别策略："):
+            value = line.split("：", 1)[1].strip()
+            if value not in profiles:
+                errors.append(f"制作控制卡：景别策略必须为{ '、'.join(sorted(profiles)) }之一")
+        if line.startswith("参考素材："):
+            value = line.split("：", 1)[1].strip()
+            if not value:
+                errors.append("制作控制卡：参考素材不能为空")
+            if re.search(r"@\s*[\[［]", value):
+                errors.append("制作控制卡：参考素材默认不得使用 @[...] 引用")
+        if line.startswith(("起始状态：", "结束状态：", "复杂度：", "声音槽位：", "场景人物名册：", "座位图：", "角色音色卡：", "音色绑定：")):
+            if not line.split("：", 1)[1].strip():
+                errors.append(f"制作控制卡：{line.split('：', 1)[0]}不能为空")
+        if line.startswith("负面约束："):
+            value = line.split("：", 1)[1].strip()
+            if not value:
+                errors.append("制作控制卡：负面约束不能为空")
+            items = [x for x in re.split(r"[；;]", value) if x.strip()]
+            if len(items) > 8:
+                errors.append("制作控制卡：负面约束建议不超过8条")
+        if not allow_frame_anchors and ("首帧锚定" in line or "首帧锁定" in line):
+            errors.append("制作控制卡：默认不使用首帧锚定/首帧锁定")
+        if "STYLE LOCK" in line.upper() or line.startswith("项目级风格锁："):
+            errors.append("制作控制卡：默认不新增项目级风格锁")
+    return errors
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("file", type=Path)
+    parser.add_argument("--start-shot", type=int, default=1)
+    parser.add_argument("--start-paragraph", type=int, default=1)
+    parser.add_argument("--check-controls", action="store_true", help="检查可选制作控制卡")
+    parser.add_argument("--check-voices", action="store_true", help="检查音色锚点与跨镜绑定")
+    parser.add_argument("--allow-frame-anchors", action="store_true", help="允许控制卡出现首帧锚定/首帧锁定")
+    args = parser.parse_args()
+    if args.start_shot < 1 or args.start_paragraph < 1:
+        parser.error("起始编号必须大于0")
+    try:
+        content = args.file.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError) as exc:
+        print(f"无法读取UTF-8分镜文件：{exc}", file=sys.stderr)
+        return 2
+    errors = validate(content, args.start_shot, args.start_paragraph)
+    if args.check_controls:
+        errors.extend(validate_controls(content, allow_frame_anchors=args.allow_frame_anchors))
+    if args.check_voices:
+        errors.extend(validate_voices(content))
+    if errors:
+        for error in errors:
+            print(f"ERROR: {error}")
+        return 1
+    print("PASS: 结构检查通过；仍需人工核对剧情、对白、连续性、可执行性和实际音色绑定。")
+    return 0
+
+
+if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+    raise SystemExit(main())

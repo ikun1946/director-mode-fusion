@@ -1,0 +1,4 @@
+interface:
+  display_name: "导演模式最终融合版"
+  short_description: "融合光影、表演、角色音色与因果剪辑，生成10.0–15.0秒段落式可执行导演分镜"
+  default_prompt: "请用 $director-mode-fusion 将我提供的剧本完整拆为即梦/Seedance导演分镜，严格检查时长、人物道具连续性、对白指向和角色音色跨镜一致性。"
