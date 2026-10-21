@@ -1,6 +1,6 @@
 # Director Mode Fusion (导演模式最终融合版)
 
-[![Version](https://img.shields.io/badge/version-1.0.2-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](scripts/validate_storyboard.py)
 [![Antigravity Skill](https://img.shields.io/badge/Antigravity-Skill-orange.svg)](SKILL.md)
@@ -19,6 +19,7 @@
 - **时长精确加总**：段首标题时长必须严格等于本段各镜头时长求和（一位小数），禁止靠空镜凑秒或为抢时长吞字。
 
 ### 2. AI 扩散模型防翻车工程设计
+- **角色外观与服装解耦设计（分镜与美术资产并行流水线）**：提示词彻底剔除服装颜色、款式形制、花纹等静态外观词，将外观基准全权交给下游角色参考图；提示词专攻肢体动作、视线、神态表情与衣物物理受力（风动、翻卷、扯紧、湿透），杜绝提示词与参考图打架。
 - **单人交替隔离正反打（A-B-A-B-A）**：强冲突镜头每镜第一句均写明 `本镜画面中仅有1人`，将对峙拆解为单人正反打，彻底根除双人同框时的融人、肢体粘连与“双胞胎”形变。
 - **180° 轴线与屏幕视线锁定**：
   - 画左角色（置于画面左侧三分线）：**视线必须明确标注投向画右**；

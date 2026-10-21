@@ -18,7 +18,10 @@ import sys
 
 # Paths
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CONFIG_SKILL_DIR = Path.home() / ".gemini" / "config" / "skills" / "director-mode-fusion"
+CONFIG_SKILL_DIRS = [
+    Path.home() / ".codex" / "skills" / "director-mode-fusion",
+    Path.home() / ".gemini" / "config" / "skills" / "director-mode-fusion",
+]
 SKILL_FILE = REPO_ROOT / "SKILL.md"
 CHANGELOG_FILE = REPO_ROOT / "CHANGELOG.md"
 
@@ -42,38 +45,39 @@ def get_current_version():
 
 
 def sync_to_antigravity():
-    """Copy current repository skill files to Antigravity config directory."""
-    if not CONFIG_SKILL_DIR.parent.exists():
-        CONFIG_SKILL_DIR.parent.mkdir(parents=True, exist_ok=True)
-    
-    print(f"[+] 正在同步 Skill 到 Antigravity 配置目录: {CONFIG_SKILL_DIR} ...")
-    
-    # Exclude git and dev artifacts
+    """Copy current repository skill files to Codex and Antigravity config directories."""
     exclude_items = {".git", ".gitignore", "director-mode-fusion-optimized.zip", "__pycache__"}
-    
-    if not CONFIG_SKILL_DIR.exists():
-        CONFIG_SKILL_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Clean destination except .git if any
-    for item in CONFIG_SKILL_DIR.iterdir():
-        if item.name == ".git":
+    synced_any = False
+    for target_dir in CONFIG_SKILL_DIRS:
+        if not target_dir.parent.exists():
             continue
-        if item.is_dir():
-            shutil.rmtree(item)
-        else:
-            item.unlink()
+        print(f"[+] 正在同步 Skill 到配置目录: {target_dir} ...")
+        if not target_dir.exists():
+            target_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy files
-    for item in REPO_ROOT.iterdir():
-        if item.name in exclude_items:
-            continue
-        dest = CONFIG_SKILL_DIR / item.name
-        if item.is_dir():
-            shutil.copytree(item, dest)
-        else:
-            shutil.copy2(item, dest)
+        # Clean destination except .git if any
+        for item in target_dir.iterdir():
+            if item.name == ".git":
+                continue
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                item.unlink()
 
-    print("[✓] 同步完成！Antigravity 当前已加载此版本的 Skill。")
+        # Copy files
+        for item in REPO_ROOT.iterdir():
+            if item.name in exclude_items:
+                continue
+            dest = target_dir / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+        print(f"[✓] 同步完成: {target_dir}")
+        synced_any = True
+
+    if not synced_any:
+        print("[-] 未找到有效的目标配置目录进行同步。")
 
 
 def list_versions():
