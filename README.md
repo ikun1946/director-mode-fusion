@@ -1,6 +1,6 @@
 # Director Mode Fusion (导演模式最终融合版)
 
-[![Version](https://img.shields.io/badge/version-1.0.5-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.6-brightgreen.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](scripts/validate_storyboard.py)
 [![Antigravity Skill](https://img.shields.io/badge/Antigravity-Skill-orange.svg)](SKILL.md)
@@ -20,7 +20,7 @@
 
 ### 2. AI 扩散模型防翻车工程设计
 - **角色外观与服装解耦设计（分镜与美术资产并行流水线）**：提示词彻底剔除服装颜色、款式形制、花纹等静态外观词，将外观基准全权交给下游角色参考图；提示词专攻肢体动作、视线、神态表情与衣物物理受力（风动、翻卷、扯紧、湿透），杜绝提示词与参考图打架。
-- **单人交替隔离正反打（A-B-A-B-A）**：强冲突镜头每镜第一句均写明 `本镜画面中仅有1人`，将对峙拆解为单人正反打，彻底根除双人同框时的融人、肢体粘连与“双胞胎”形变。
+- **按当前信息选择单人或双人构图**：威胁、对白与反应可用单人正反打；近身接触保留清楚的攻防关系，不预设固定镜数或交替顺序。构图选择用于降低复杂度，不承诺消除生成形变。
 - **180° 轴线与屏幕视线锁定**：
   - 画左角色（置于画面左侧三分线）：**视线必须明确标注投向画右**；
   - 画右角色（置于画面右侧三分线）：**视线必须明确标注投向画左**；
@@ -51,6 +51,10 @@
 
 ---
 
+## 规则与案例分开读取
+
+常规创作只读当前任务规则。完整成品与连续动作案例保存在`examples/`，仅在用户明确请求教学示例或对照现有案例时选择读取。群像入画组合或可见范围改变时，按`references/group-continuity.md`核对人物占位、画框边界、运镜显露与整段参考预算；验证任务在`evaluations/`，不作为创作上下文。
+
 ## 目录结构
 
 ```text
@@ -62,14 +66,22 @@ director-mode-fusion/
 ├── CHANGELOG.md                      # 版本变更日志（遵循 Keep a Changelog 规范）
 ├── agents/
 │   └── openai.yaml                   # Agent 配置文件
-├── references/                       # 八大专项设计与控制规范
+├── references/                       # 按当前任务读取的规则
 │   ├── description-and-camera.md     # 细节描写、九类运镜、速度曲线与防坑
-│   ├── directing-performance.md      # 表演剪辑、轴线、视线与突发反差五镜流
-│   ├── output-qa.md                  # 输出格式标准、语义质检与合格范例库
+│   ├── directing-performance.md      # 表演剪辑、轴线、视线与冲突调度
+│   ├── output-qa.md                  # 输出格式标准与语义质检
 │   ├── production-controls.md        # 景别Profile、复杂度闸门与群像连续性
+│   ├── group-continuity.md           # 群像跨段的占位、取景与显露检查
+│   ├── special-combat.md             # 条件启用的连续打斗判断方法
 │   ├── source-map.md                 # 规则来源、演进历史与融合映射
 │   ├── visual-language.md            # 解剖景别截取、构图留白与光影景深
 │   └── voice-consistency.md          # 角色音色卡与跨镜提示词锚点绑定
+├── examples/                         # 按明确请求读取的创作案例
+│   ├── output-format.md
+│   ├── description-and-camera.md
+│   └── special-combat.md
+├── evaluations/                      # 验证输入与接受条件，不作创作参考
+│   └── scene-continuity.md
 └── scripts/
     ├── validate_storyboard.py        # 分镜格式、数字、编号与音色自动化校验器
     └── version_manager.py            # 版本管理、一键回退与同步发布工具
