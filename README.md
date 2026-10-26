@@ -1,6 +1,6 @@
 # Director Mode Fusion (导演模式最终融合版)
 
-[![Version](https://img.shields.io/badge/version-1.0.8-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.9-brightgreen.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](scripts/validate_storyboard.py)
 [![Antigravity Skill](https://img.shields.io/badge/Antigravity-Skill-orange.svg)](SKILL.md)
@@ -32,6 +32,7 @@
 
 ### 3. 快节奏剪辑与高张力镜头语言（Pacing, Impact & Micro-acting）
 不生搬硬套死板模板，而是提炼快节奏视听语言的核心推力，根据剧本有机调度：
+- **随节拍调整景别**：默认整体切换略快，空间交代清楚后及时转向对白、动作细节与情绪落点，避免长时间沿用同一景别。台词可连续跨镜，切点依据实际信息变化；有持续表达的长镜仍可保留，不设固定镜数或切镜间隔。
 - **截断式剪辑（Interrupted Cutting）**：台词或动作在情绪高点被突发画外暴响或外力暴力硬截断（如“我的——”尾字截断接踹门声），制造强烈的听觉冲击与剧情推背感。
 - **动静急刹对撞（Extreme Motion Contrast）**：极度动态的冲击动作（如抓狂抱头、暴烈破门）紧接完全凝固的静止反应（倒吸冷气、手滑跌落、目瞪口呆），动静骤停营造强烈的心理停滞感。
 - **写实生理机制微表情**：彻底淘汰“震惊、害怕”等概括词，细写到“双眼睁大瞳孔骤缩、倒吸冷气、身体一颤、双手失控滑落跌在腿上”等肌肉受惊本能。
