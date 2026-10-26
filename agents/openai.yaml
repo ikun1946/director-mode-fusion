@@ -1,4 +1,4 @@
 interface:
   display_name: "导演模式最终融合版"
-  short_description: "将小说或剧本转为10.0–15.0秒段落式导演分镜与视频提示词"
-  default_prompt: "请用 $director-mode-fusion 将我提供的剧本完整拆为即梦/Seedance导演分镜，严格检查时长、人物道具连续性、对白指向和角色音色跨镜一致性。"
+  short_description: "将剧本转为10–15秒导演分镜，结合原小说核对角色分期衣着与造型连续性"
+  default_prompt: "请用 $director-mode-fusion 将我提供的剧本完整拆为即梦/Seedance导演分镜，有原小说时对照对应情节区分各角色分期衣着造型，并检查时长、人物道具连续性、对白指向和角色音色。"
