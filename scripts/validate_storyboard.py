@@ -19,6 +19,8 @@ SPEAKER_PREFIXES = ("画外", "电话中", "电话", "隔门", "OS", "VO")
 def validate(text, start_shot=1, start_paragraph=1):
     errors = []
     stripped = text.strip()
+    if stripped.startswith('```') and stripped.endswith('```'):
+        stripped = '\n'.join(stripped.splitlines()[1:-1]).strip()
     if not stripped:
         return ["输入为空"]
     blocks = re.split(r"(?m)^\s*@\s*$", stripped)
@@ -324,6 +326,56 @@ def validate_controls(text, allow_frame_anchors=False):
     return errors
 
 
+def check_editing(text):
+    """Return explicit editing violations and heuristic review items separately.
+
+    Timing and repetition cannot establish dramatic value; never fail them alone.
+    Inspect visual instructions, not dialogue or diegetic sound descriptions.
+    """
+    errors, reviews = [], []
+    shots = []
+    for block in re.split(r"(?m)^\s*@\s*$", text.strip()):
+        header = re.search(r"段落([0-9]+)｜总时长：([0-9]+\.[0-9])s", block)
+        if not header:
+            continue
+        paragraph_shots = []
+        matches = list(re.finditer(r"(?m)^镜([0-9]+)｜([0-9]+\.[0-9])s｜([^\n]+)", block))
+        for i, match in enumerate(matches):
+            body = block[match.end():matches[i + 1].start() if i + 1 < len(matches) else len(block)]
+            visual = "\n".join(line for line in body.splitlines() if line.startswith(("画面：", "运镜：")))
+            # Quoted text can be signs or source dialogue, not camera directions.
+            visual = re.sub(r"[“「][^”」]*[”」]", "", visual)
+            move = next((line for line in body.splitlines() if line.startswith("运镜：")), "")
+            shot = (int(match[1]), Decimal(match[2]), match[3].strip(), move)
+            shots.append(shot)
+            paragraph_shots.append(shot)
+            for clause in re.split(r"[，。；;\n]", visual):
+                if re.search(r"(?:禁止|不要|不得|不使用|不用|无|不加|避免)[^，。；;]*$", clause):
+                    continue
+                if re.search(r"叠化|淡入|淡出|(?:溶解|闪白|黑场|遮罩|遮挡|甩镜|变形|画框|擦除)(?:过渡|转场)|(?:转场|过渡)(?:效果|特效)|(?:渐隐|渐显|渐变)至|切(?:入|至)黑场|画框穿越|cross.?fade|dissolve|fade.?out|fade.?in", clause, re.I):
+                    errors.append(f"镜{shot[0]}：含转场特效指令，镜间只能硬切：{clause.strip()}")
+            if shot[1] > Decimal('4.0'):
+                reviews.append(f"镜{shot[0]}：{shot[1]}秒，复核切点及持续观看依据；多节点固定对白长于6秒原则上拆镜")
+        if Decimal('10.0') <= Decimal(header[2]) <= Decimal('15.0') and 1 <= len(paragraph_shots) <= 2:
+            reviews.append(f"段落{header[1]}：仅{len(paragraph_shots)}镜，复核是否遗漏有效切点")
+        pushes = [shot for shot in paragraph_shots if has_push_pull(shot[3])]
+        if paragraph_shots and len(pushes) * 2 > len(paragraph_shots):
+            reviews.append(f"段落{header[1]}：推拉/变焦超过半数，优先重排为固定机位之间硬切")
+    for i, shot in enumerate(shots):
+        if i + 1 < len(shots) and not re.search(r"(?:[，；;]\s*|\s)硬切\s*[。.]?$", shot[3]):
+            errors.append(f"镜{shot[0]}：有后继镜头，运镜末尾须明确写硬切")
+        if i and shot[2] == shots[i - 1][2]:
+            reviews.append(f"镜{shots[i - 1][0]}–镜{shot[0]}：标题取景相同，核对真实观察对象/角度变化，勿仅改标签")
+        if i and has_push_pull(shot[3]) and has_push_pull(shots[i - 1][3]):
+            reviews.append(f"镜{shots[i - 1][0]}–镜{shot[0]}：连续推拉/变焦，核对是否应硬切换取景")
+    return errors, reviews
+
+
+def has_push_pull(move):
+    # Avoid matching position phrases such as “距拉车人” or action subjects.
+    return bool(re.search(r"[，；;]\s*(?:缓慢|缓缓|快速|轻微|轻|快|慢)?(?:推近|推进|推镜|推远|拉远|拉近|拉镜|推拉|变焦|光学推|光学拉|快推|复合[^；\n]*(?:推|拉))", move))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("file", type=Path)
@@ -331,6 +383,7 @@ def main():
     parser.add_argument("--start-paragraph", type=int, default=1)
     parser.add_argument("--check-controls", action="store_true", help="检查可选制作控制卡")
     parser.add_argument("--check-voices", action="store_true", help="检查音色锚点与跨镜绑定")
+    parser.add_argument("--check-editing", action="store_true", help="检查硬切与转场特效，列出长镜/低镜数/推拉密集待复核项")
     parser.add_argument("--allow-frame-anchors", action="store_true", help="允许控制卡出现首帧锚定/首帧锁定")
     args = parser.parse_args()
     if args.start_shot < 1 or args.start_paragraph < 1:
@@ -345,6 +398,11 @@ def main():
         errors.extend(validate_controls(content, allow_frame_anchors=args.allow_frame_anchors))
     if args.check_voices:
         errors.extend(validate_voices(content))
+    if args.check_editing:
+        editing_errors, reviews = check_editing(content)
+        errors.extend(editing_errors)
+        for review in reviews:
+            print(f"REVIEW: {review}")
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
