@@ -278,8 +278,8 @@ def validate_controls(text, allow_frame_anchors=False):
         if budget is None or scene_count is None or role_count is None:
             errors.append("制作控制卡：参考图预算、场景参考和角色参考必须写明“N张”")
         else:
-            if scene_count != 1:
-                errors.append("制作控制卡：场景参考必须为1张")
+            if scene_count < 1:
+                errors.append("制作控制卡：场景参考至少1张，多场景按实际图片计数")
             if role_count > 8:
                 errors.append("制作控制卡：角色参考最多8张")
             if other_count is None:
