@@ -112,7 +112,7 @@ director-mode-fusion/
 
 ## 多 Skill 仓库中的地位
 
-本 Skill 位于 `codex-skill` 仓库的 `skills/director-mode-fusion/`。它拥有独立的规则、参考资料、脚本、测试和变更记录，可在不安装仓库中其他 Skill 的情况下单独使用。
+本 Skill 位于多 Skill 仓库 [`codex-skill`](https://github.com/ikun1946/codex-skill) 的 [`skills/director-mode-fusion/`](https://github.com/ikun1946/codex-skill/tree/master/skills/director-mode-fusion)。它拥有独立的规则、参考资料、脚本、测试和变更记录，可在不安装仓库中其他 Skill 的情况下单独使用。
 
 发布和同步由仓库根目录的独立工具完成：
 
@@ -129,7 +129,7 @@ python tools/release_skill.py director-mode-fusion 1.0.17 -m "更新说明"
 
 ### 作为 Antigravity Skill 安装
 
-克隆多 Skill 仓库后，从仓库根目录同步本 Skill：
+默认从 `master` 分支克隆多 Skill 仓库后，从仓库根目录同步本 Skill：
 
 ```powershell
 git clone https://github.com/ikun1946/codex-skill.git

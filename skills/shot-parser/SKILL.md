@@ -4,6 +4,7 @@ description: 从分镜或剧本解析角色、纯环境场景与特殊剧情道�
 metadata:
   agent_created: true
   version: "2.0.4"
+  repository: https://github.com/ikun1946/codex-skill/tree/master/skills/shot-parser
 ---
 
 # 分镜与剧本资产解析器 v2.0.4
@@ -56,3 +57,14 @@ metadata:
 ## 维护
 
 修改已有文件前复制带唯一时间戳的 `.bak-YYYYMMDD-HHMMSS`。修改规则时同步更新校验、导出和行为测试，保持本技能自包含，不依赖其他资产技能。运行 `python -B -m unittest discover -s tests -v` 验证；不得把格式校验通过等同于来源、美术和完整性全部通过。
+
+## 仓库与独立维护
+
+- **所在多 Skill 仓库**：[https://github.com/ikun1946/codex-skill](https://github.com/ikun1946/codex-skill)
+- **本 Skill 目录**：[skills/shot-parser](https://github.com/ikun1946/codex-skill/tree/master/skills/shot-parser)
+- **Git Clone / Remote 地址**：`https://github.com/ikun1946/codex-skill.git`
+- **默认分支**：`master`
+- 本 Skill 与其他 Skill 共用仓库，但运行时文件、规则、测试和版本记录全部位于本目录内。
+- 获取仓库最新版：`git pull origin master`
+- 同步本 Skill：在仓库根目录运行 `python tools/sync_skill.py shot-parser --force`
+- 发布本 Skill 的独立版本：`python tools/release_skill.py shot-parser <version> -m "<说明>"`

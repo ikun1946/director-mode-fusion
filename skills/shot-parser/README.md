@@ -4,7 +4,7 @@
 
 从分镜或剧本提取角色、场景、道具，结合小说补充设定，撰写可直接用作文生图提示词的精细美术描述。资产名称与制作分镜逐项对应，描述不含真人、动漫、3D 等画风标签或渲染参数。
 
-本 Skill 由 **ikun1946** 维护，保存在多 Skill 仓库 [`codex-skill`](https://github.com/ikun1946/codex-skill) 的 `skills/shot-parser/` 目录中。它可以独立安装、校验和发布，不依赖仓库中的其他 Skill。
+本 Skill 由 **ikun1946** 维护，保存在多 Skill 仓库 [`codex-skill`](https://github.com/ikun1946/codex-skill) 的 [`skills/shot-parser/`](https://github.com/ikun1946/codex-skill/tree/master/skills/shot-parser) 目录中。它可以独立安装、校验和发布，不依赖仓库中的其他 Skill。
 
 ## 功能
 
