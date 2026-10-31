@@ -16,7 +16,31 @@ TEMPORARY_VOICE_WORDS = ("当前", "此刻", "愤怒", "悲伤", "哭腔", "哽�
 SPEAKER_PREFIXES = ("画外", "电话中", "电话", "隔门", "OS", "VO")
 
 
-def validate(text, start_shot=1, start_paragraph=1):
+SCENE_FIELDS = ("本段场景布局：", "本段统一光影/质感：", "本场光影/质感：")
+EXTERNAL_SCENE_REFERENCE = re.compile(r"同前|(?<!相)同上(?![方悬])(?:段|场|镜)?|沿用(?:上|前)(?:一)?(?:段|场|镜)|参见(?:上|前)(?:一)?(?:段|场|镜)")
+
+
+def _read_scene_fields(lines, cursor, errors, label, initial, strict):
+    """Consume ordered scene metadata; absent legacy fields remain compatible."""
+    expected = [("本段场景布局：", strict)]
+    if initial:
+        expected += [("出场人物：", True), ("本段统一光影/质感：", True)]
+    else:
+        expected += [("本场光影/质感：", strict)]
+    for prefix, required in expected:
+        if cursor < len(lines) and lines[cursor].startswith(prefix):
+            value = lines[cursor][len(prefix):].strip()
+            if not value:
+                errors.append(f"{label}：{prefix}不能为空")
+            elif strict and prefix != "出场人物：" and EXTERNAL_SCENE_REFERENCE.search(value):
+                errors.append(f"{label}：{prefix}含外部依赖，需独立写全布局或光影")
+            cursor += 1
+        elif required:
+            errors.append(f"{label}：缺少或错置{prefix}")
+    return cursor
+
+
+def validate(text, start_shot=1, start_paragraph=1, check_scenes=False):
     errors = []
     stripped = text.strip()
     if stripped.startswith('```') and stripped.endswith('```'):
@@ -39,18 +63,17 @@ def validate(text, start_shot=1, start_paragraph=1):
         label = f"段落{number}"
         if number != start_paragraph + index:
             errors.append(f"{label}：段落编号不连续")
-        for position, prefix in [(1, "场景："), (2, "出场人物："), (3, "本段统一光影/质感：")]:
-            if not lines[position].startswith(prefix) or not lines[position][len(prefix):].strip():
-                errors.append(f"{label}：缺少或错置{prefix}")
+        if not lines[1].startswith("场景：") or not lines[1][len("场景："):].strip():
+            errors.append(f"{label}：缺少或错置场景：")
+        cursor = _read_scene_fields(lines, 2, errors, label, True, check_scenes)
         total = Decimal("0")
         count = 0
-        pending_scene = False
-        cursor = 4
+        pending_scene = True
         while cursor < len(lines):
             line = lines[cursor]
             if line == "制作控制卡":
                 cursor += 1
-                while cursor < len(lines) and not lines[cursor].startswith(("镜", "场景：", "段落")):
+                while cursor < len(lines) and not lines[cursor].startswith(("镜", "场景：", "段落") + SCENE_FIELDS):
                     cursor += 1
                 continue
             if line.startswith("场景："):
@@ -58,6 +81,7 @@ def validate(text, start_shot=1, start_paragraph=1):
                     errors.append(f"{label}：场景切换重复或为空")
                 pending_scene = True
                 cursor += 1
+                cursor = _read_scene_fields(lines, cursor, errors, f"{label}换场", False, check_scenes)
                 continue
             match = SHOT.fullmatch(line)
             if not match:
@@ -384,6 +408,7 @@ def main():
     parser.add_argument("--check-controls", action="store_true", help="检查可选制作控制卡")
     parser.add_argument("--check-voices", action="store_true", help="检查音色锚点与跨镜绑定")
     parser.add_argument("--check-editing", action="store_true", help="检查硬切与转场特效，列出长镜/低镜数/推拉密集待复核项")
+    parser.add_argument("--check-scenes", action="store_true", help="严格检查每场布局、段内换场光影及环境字段外部依赖；不判断空间语义")
     parser.add_argument("--allow-frame-anchors", action="store_true", help="允许控制卡出现首帧锚定/首帧锁定")
     args = parser.parse_args()
     if args.start_shot < 1 or args.start_paragraph < 1:
@@ -393,7 +418,7 @@ def main():
     except (OSError, UnicodeError) as exc:
         print(f"无法读取UTF-8分镜文件：{exc}", file=sys.stderr)
         return 2
-    errors = validate(content, args.start_shot, args.start_paragraph)
+    errors = validate(content, args.start_shot, args.start_paragraph, check_scenes=args.check_scenes)
     if args.check_controls:
         errors.extend(validate_controls(content, allow_frame_anchors=args.allow_frame_anchors))
     if args.check_voices:
