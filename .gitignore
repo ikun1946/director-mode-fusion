@@ -33,3 +33,9 @@ desktop.ini
 *.log
 tmp/
 temp/
+
+# Local backups and test caches
+*.bak-*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

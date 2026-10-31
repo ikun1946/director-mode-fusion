@@ -1,8 +1,9 @@
 ---
 name: director-mode-fusion
-version: 1.0.16
-repository: https://github.com/ikun1946/director-mode-fusion
 description: 将小说、剧本或故事改编为即梦/Seedance可执行导演分镜，按10.0–15.0秒组织段落，保持台词与连续性；有原小说时对照对应情节，区分各角色不同时期的衣着造型与状态资产。用于“导演模式最终融合版”、完整拆镜、分镜提示词生成或修订；不用于直接生成视频或仅润色故事。
+metadata:
+  version: "1.0.16"
+  repository: https://github.com/ikun1946/codex-skill/tree/main/skills/director-mode-fusion
 ---
 
 # 导演模式最终融合版
@@ -167,10 +168,11 @@ description: 将小说、剧本或故事改编为即梦/Seedance可执行导演�
 
 ## 仓库地址与 Agent 维护更新
 
-- **官方 Git 仓库**：[https://github.com/ikun1946/director-mode-fusion](https://github.com/ikun1946/director-mode-fusion)
-- **Git Clone / Remote 地址**：`https://github.com/ikun1946/director-mode-fusion.git`
+- **所在多 Skill 仓库**：[https://github.com/ikun1946/codex-skill](https://github.com/ikun1946/codex-skill)
+- **本 Skill 目录**：[skills/director-mode-fusion](https://github.com/ikun1946/codex-skill/tree/main/skills/director-mode-fusion)
+- **Git Clone / Remote 地址**：`https://github.com/ikun1946/codex-skill.git`
 - **Agent 维护指引**：
   - 当其他 Agent 需要检查最新规则、获取更新或排查问题时，可直接依据上述仓库链接定位到代码库。
-  - 获取最新版：`git pull origin master`
-  - 查看历史并存版本或回退：`python scripts/version_manager.py list` / `python scripts/version_manager.py switch <version>`
-  - 将改动同步生效至本地 Antigravity 技能目录：`python scripts/version_manager.py sync`
+  - 获取仓库最新版：`git pull origin master`
+  - 将本 Skill 同步到本地技能目录：在仓库根目录运行 `python tools/sync_skill.py director-mode-fusion --force`
+  - 发布本 Skill 的独立版本：`python tools/release_skill.py director-mode-fusion <version> -m "<说明>"`
